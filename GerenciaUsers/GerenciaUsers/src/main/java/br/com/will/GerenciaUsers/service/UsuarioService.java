@@ -3,7 +3,9 @@ package br.com.will.GerenciaUsers.service;
 import br.com.will.GerenciaUsers.Dto.TokenDto;
 import br.com.will.GerenciaUsers.Dto.UsuarioDTO;
 import br.com.will.GerenciaUsers.Dto.UsuarioLoginDto;
+import br.com.will.GerenciaUsers.Dto.UsuarioRedefinirDto;
 import br.com.will.GerenciaUsers.model.Usuario;
+import br.com.will.GerenciaUsers.model.mail.EmailDetails;
 import br.com.will.GerenciaUsers.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,8 @@ public class UsuarioService {
     private UsuarioRepository repository;
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private EmailService emailService;
 
     public ResponseEntity login(UsuarioLoginDto usuarioLoginDto) {
         var token = new UsernamePasswordAuthenticationToken(usuarioLoginDto.login(), usuarioLoginDto.senha());
@@ -34,10 +38,46 @@ public class UsuarioService {
         if(this.repository.findByLogin(usuarioDTO.login()) != null){
             return ResponseEntity.badRequest().build();
         } else {
-            var hashSenha = new BCryptPasswordEncoder().encode(usuarioDTO.senha());
+            var hashSenha = criarHashSenhas(usuarioDTO.senha());
             Usuario usuario = new Usuario(usuarioDTO.login(), usuarioDTO.role(), hashSenha);
             repository.save(usuario);
             return ResponseEntity.ok().build();
         }
+    }
+
+    public ResponseEntity esqueci(UsuarioRedefinirDto usuarioRedefinirDto) {
+        if(this.repository.findByLogin(usuarioRedefinirDto.login()) == null){
+            return ResponseEntity.badRequest().build();
+        }
+        var usuario = repository.findByLogin(usuarioRedefinirDto.login());
+        var token = jwtService.gerarToken((Usuario) usuario);
+
+        EmailDetails email = criarEmail(usuarioRedefinirDto.login(), token);
+        var sendEmail = emailService.simpleMail(email);
+        System.out.println(email.toString());
+        return ResponseEntity.ok(sendEmail);
+    }
+    public ResponseEntity redefinir(UsuarioDTO usuarioDTO) {
+        if(this.repository.findByLogin(usuarioDTO.login()) == null){
+            return ResponseEntity.badRequest().build();
+        }
+        Usuario usuario = repository.buscarPorLogin(usuarioDTO.login());
+        usuario.redefinirSenha(criarHashSenhas(usuarioDTO.senha()));
+        return ResponseEntity.ok().build();
+    }
+
+    private EmailDetails criarEmail(String usuario, String token) {
+        EmailDetails email = new EmailDetails();
+        email.setRecipient(usuario);
+        email.setSubject("Redefinição de email do usuario : " + usuario);
+        email.setMsgBody(String.format("""
+                Para redefinir clique aqui!
+                'http://127.0.0.1:5500/view/Redefinir.html?token=%s'"
+                """,token));
+        return email;
+    }
+
+    private String criarHashSenhas(String senha){
+       return new BCryptPasswordEncoder().encode(senha);
     }
 }

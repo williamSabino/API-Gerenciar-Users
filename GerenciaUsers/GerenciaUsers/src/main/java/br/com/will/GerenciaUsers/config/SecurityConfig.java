@@ -25,6 +25,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/usuario/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/usuario/registrar").permitAll()
+                        .requestMatchers("/auth/usuario/redefinir").authenticated()
+                        .requestMatchers("/auth/usuario/esqueci").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(filterConfig, UsernamePasswordAuthenticationFilter.class)
