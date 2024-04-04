@@ -33,10 +33,10 @@ public class Usuario implements UserDetails {
     @NotNull @Enumerated(EnumType.STRING)
     private Role role;
 
-    public Usuario(String login, Role role, String hashSenha) {
+    public Usuario(String login, String hashSenha) {
         this.senha = hashSenha;
         this.login = login;
-        this.role = role;
+        this.role = Role.USER;
     }
 
     @Override

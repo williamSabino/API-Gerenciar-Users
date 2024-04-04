@@ -39,9 +39,9 @@ public class UsuarioService {
             return ResponseEntity.badRequest().build();
         } else {
             var hashSenha = criarHashSenhas(usuarioDTO.senha());
-            Usuario usuario = new Usuario(usuarioDTO.login(), usuarioDTO.role(), hashSenha);
+            Usuario usuario = new Usuario(usuarioDTO.login(), hashSenha);
             repository.save(usuario);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body("Usuario criado");
         }
     }
 
@@ -54,7 +54,6 @@ public class UsuarioService {
 
         EmailDetails email = criarEmail(usuarioRedefinirDto.login(), token);
         var sendEmail = emailService.simpleMail(email);
-        System.out.println(email.toString());
         return ResponseEntity.ok(sendEmail);
     }
     public ResponseEntity redefinir(UsuarioDTO usuarioDTO) {
@@ -63,7 +62,7 @@ public class UsuarioService {
         }
         Usuario usuario = repository.buscarPorLogin(usuarioDTO.login());
         usuario.redefinirSenha(criarHashSenhas(usuarioDTO.senha()));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(usuario);
     }
 
     private EmailDetails criarEmail(String usuario, String token) {
